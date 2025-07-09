@@ -108,11 +108,16 @@ Raw SQL with string formatting allows SQL Injection. Use the ORM or bound parame
 
 ### Round 4 – Guess the flaw
 
-```text
-# Product‑spec excerpt (marketing):
-# “Store the raw HTML supplied by users and render it unescaped
-# on the microsite because the content team needs full control.”
-```
+```python
+class Promo(models.Model):
+    name = models.CharField(max_length=50)
+    starts_at = models.DateTimeField(null=True, blank=True)
+    ends_at = models.DateTimeField(null=True, blank=True)
+    raw_html = models.TextField()
+    is_enabled = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["-starts_at"]
 
 ---
 
@@ -132,6 +137,8 @@ Design choices bake in XSS risk. Threat‑model early, sanitise rich content (`b
 # settings.py (production)
 DEBUG = True
 ALLOWED_HOSTS = ["*"]
+CSRF_COOKIE_SECURE = False
+SESSION_COOKIE_SECURE = False
 ```
 
 ---
@@ -151,7 +158,7 @@ Verbose errors and open hosts. Disable `DEBUG`, restrict hosts, and enable Djang
 ```text
 requirements.txt
 -----------------
-Django==1.11.29  # End‑of‑life
+Django==1.11.29
 ```
 
 ---
@@ -175,7 +182,7 @@ from django.contrib.auth import authenticate, login
 def signin(request):
     if request.method == "POST":
         user = authenticate(...)
-        login(request, user)  # no MFA, no rate‑limit
+        login(request, user)
 ```
 
 ---
@@ -276,9 +283,7 @@ class MessageAdmin(admin.ModelAdmin):
     list_display = ("sender", "timestamp", "short_user_input")
 
     def short_user_input(self, obj):
-        return obj.user_input[:200]
-
-    short_user_input.allow_tags = True
+        return mark_safe(obj.user_input[:200])
 ```
 
 ---
