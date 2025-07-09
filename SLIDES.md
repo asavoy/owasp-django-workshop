@@ -83,16 +83,15 @@ Weak hashing exposes secrets. Use `secrets.token_urlsafe()` or Django’s signin
 ### Round 3 – Guess the flaw
 
 ```python
-last_name = request.GET.get("last_name", "")
-if not last_name:
-    messages.info(request, "Please enter a last name")
-    return redirect("search")
-
-users = [
-    User.objects.raw(
-        "SELECT * FROM users WHERE last_name = '%s'" % last_name
-    )
-]
+def user_search(request):
+	last_name = request.GET.get("last_name", "")
+	users = [
+			# Raw SQL to leverage a custom Postgres function for fuzzy matching
+			User.objects.raw(
+					"SELECT * FROM users WHERE fuzzy_match(last_name, '%s')" % last_name
+			)
+	]
+	# ...
 ```
 
 ---
